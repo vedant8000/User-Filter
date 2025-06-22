@@ -78,7 +78,7 @@ const generateProducts = () => {
       { name: "Designer Leather Jacket", image: "leather-jacket" },
       { name: "Silk Evening Dress", image: "evening-dress" },
       { name: "Cashmere Sweater", image: "cashmere-sweater" },
-      { name: "Premium Jeans", image: "premium-jeans" },
+      { name: "Amazon Jeans", image: "Amazon-jeans" },
       { name: "Luxury Watch", image: "luxury-watch" },
       { name: "Designer Handbag", image: "designer-handbag" },
       { name: "Silk Scarf", image: "silk-scarf" },
