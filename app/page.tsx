@@ -5,20 +5,20 @@ import { Shield, Star, Settings } from "lucide-react"
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100">
       <div className="container mx-auto px-4 py-16">
         <div className="text-center mb-16">
           <h1 className="text-5xl font-bold text-gray-900 mb-4">Amazon Marketplace</h1>
           <p className="text-xl text-gray-600 mb-8">Where quality sellers meet quality customers</p>
           <div className="flex gap-4 justify-center">
             <Link href="/seller">
-              <Button size="lg" className="bg-orange-500 hover:bg-orange-600">
+              <Button size="lg" className="bg-orange-500 hover:bg-orange-600 text-white">
                 <Settings className="mr-2 h-5 w-5" />
                 Seller Dashboard
               </Button>
             </Link>
             <Link href="/customer">
-              <Button size="lg" variant="outline">
+              <Button size="lg" variant="outline" className="border-gray-300">
                 <Star className="mr-2 h-5 w-5" />
                 Shop Now
               </Button>
@@ -27,7 +27,7 @@ export default function HomePage() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8 mb-16">
-          <Card>
+          <Card className="bg-white">
             <CardHeader>
               <Shield className="h-12 w-12 text-blue-500 mb-4" />
               <CardTitle>Quality Control</CardTitle>
@@ -39,7 +39,7 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white">
             <CardHeader>
               <Star className="h-12 w-12 text-yellow-500 mb-4" />
               <CardTitle>Rating System</CardTitle>
@@ -52,7 +52,7 @@ export default function HomePage() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-white">
             <CardHeader>
               <Settings className="h-12 w-12 text-green-500 mb-4" />
               <CardTitle>Seller Control</CardTitle>

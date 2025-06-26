@@ -78,7 +78,7 @@ const generateProducts = () => {
       { name: "Designer Leather Jacket", image: "leather-jacket" },
       { name: "Silk Evening Dress", image: "evening-dress" },
       { name: "Cashmere Sweater", image: "cashmere-sweater" },
-      { name: "Amazon Jeans", image: "Amazon-jeans" },
+      { name: "Premium Jeans", image: "premium-jeans" },
       { name: "Luxury Watch", image: "luxury-watch" },
       { name: "Designer Handbag", image: "designer-handbag" },
       { name: "Silk Scarf", image: "silk-scarf" },
@@ -159,7 +159,7 @@ const generateProducts = () => {
   return products
 }
 
-// Generate 120 customers with varied ratings
+// Generate 120 customers with varied ratings including unrated customers
 const generateCustomers = () => {
   const firstNames = [
     "Emma",
@@ -279,34 +279,53 @@ const generateCustomers = () => {
 
   const customers = []
 
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < 150; i++) {
     const firstName = firstNames[Math.floor(Math.random() * firstNames.length)]
     const lastName = lastNames[Math.floor(Math.random() * lastNames.length)]
 
-    // Create more realistic rating distribution
-    let rating
-    const rand = Math.random()
-    if (rand < 0.05)
-      rating = Math.random() * 1 // 0-1 stars (5%)
-    else if (rand < 0.15)
-      rating = 1 + Math.random() * 1 // 1-2 stars (10%)
-    else if (rand < 0.35)
-      rating = 2 + Math.random() * 1 // 2-3 stars (20%)
-    else if (rand < 0.65)
-      rating = 3 + Math.random() * 1 // 3-4 stars (30%)
-    else rating = 4 + Math.random() * 1 // 4-5 stars (35%)
+    let rating = null
+    let totalOrders = 0
+    let isUnrated = false
+
+    // 30% of customers are unrated (new customers)
+    if (i < 45) {
+      rating = null
+      totalOrders = 0
+      isUnrated = true
+    } else {
+      // Create more realistic rating distribution for rated customers
+      const rand = Math.random()
+      if (rand < 0.05)
+        rating = Math.random() * 1 // 0-1 stars (5%)
+      else if (rand < 0.15)
+        rating = 1 + Math.random() * 1 // 1-2 stars (10%)
+      else if (rand < 0.35)
+        rating = 2 + Math.random() * 1 // 2-3 stars (20%)
+      else if (rand < 0.65)
+        rating = 3 + Math.random() * 1 // 3-4 stars (30%)
+      else rating = 4 + Math.random() * 1 // 4-5 stars (35%)
+
+      rating = +rating.toFixed(1)
+      totalOrders = Math.floor(Math.random() * 50) + 1
+    }
 
     customers.push({
       id: `customer${i + 1}`,
       name: `${firstName} ${lastName}`,
       email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`,
-      rating: +rating.toFixed(2),
-      totalOrders: Math.floor(Math.random() * 50) + 1,
+      rating,
+      totalOrders,
+      isUnrated,
       joinDate: new Date(2020 + Math.random() * 4, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28)),
     })
   }
 
-  return customers.sort((a, b) => b.rating - a.rating)
+  return customers.sort((a, b) => {
+    if (a.isUnrated && !b.isUnrated) return -1
+    if (!a.isUnrated && b.isUnrated) return 1
+    if (a.isUnrated && b.isUnrated) return 0
+    return (b.rating || 0) - (a.rating || 0)
+  })
 }
 
 export default function SellerDashboard() {
@@ -322,9 +341,11 @@ export default function SellerDashboard() {
   const sellerProducts = products.filter((p) => p.sellerId === selectedSeller.id)
 
   useEffect(() => {
-    const eligible = customers.filter((c) => c.rating >= threshold[0])
+    const eligible = customers.filter((c) => c.isUnrated || (c.rating && c.rating >= threshold[0]))
     const filtered = customers.length - eligible.length
-    const avgRating = eligible.length > 0 ? eligible.reduce((sum, c) => sum + c.rating, 0) / eligible.length : 0
+    const ratedEligible = eligible.filter((c) => !c.isUnrated && c.rating)
+    const avgRating =
+      ratedEligible.length > 0 ? ratedEligible.reduce((sum, c) => sum + c.rating, 0) / ratedEligible.length : 0
 
     setEligibleCustomers(eligible.length)
     setFilteredOut(filtered)
@@ -342,7 +363,7 @@ export default function SellerDashboard() {
           <p className="text-gray-600">Manage your store settings and customer rating thresholds</p>
         </div>
 
-        <Card>
+        <Card className="bg-white">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Star className="h-5 w-5" />
@@ -371,7 +392,7 @@ export default function SellerDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Star className="h-5 w-5 text-yellow-500" />
@@ -404,7 +425,7 @@ export default function SellerDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
@@ -422,7 +443,9 @@ export default function SellerDashboard() {
                   </div>
                   <div className="flex items-center gap-2">
                     <Badge variant="secondary">Stock: {product.stock}</Badge>
-                    <Badge variant="default">Active</Badge>
+                    <Badge variant="default" className="bg-gray-800">
+                      Active
+                    </Badge>
                   </div>
                 </div>
               ))}
@@ -433,7 +456,7 @@ export default function SellerDashboard() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />

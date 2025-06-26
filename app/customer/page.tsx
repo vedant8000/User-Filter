@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Star, ShoppingCart, Package, User, Calendar } from "lucide-react"
+import { Star, ShoppingCart, Package, User, Calendar, CheckCircle } from "lucide-react"
 
 // Use the same data generation functions
 const generateCustomers = () => {
@@ -127,29 +127,53 @@ const generateCustomers = () => {
 
   const customers = []
 
-  for (let i = 0; i < 120; i++) {
+  for (let i = 0; i < 150; i++) {
     const firstName = firstNames[Math.floor(Math.random() * firstNames.length)]
     const lastName = lastNames[Math.floor(Math.random() * lastNames.length)]
 
-    let rating
-    const rand = Math.random()
-    if (rand < 0.05) rating = Math.random() * 1
-    else if (rand < 0.15) rating = 1 + Math.random() * 1
-    else if (rand < 0.35) rating = 2 + Math.random() * 1
-    else if (rand < 0.65) rating = 3 + Math.random() * 1
-    else rating = 4 + Math.random() * 1
+    let rating = null
+    let totalOrders = 0
+    let isUnrated = false
+
+    // 30% of customers are unrated (new customers)
+    if (i < 45) {
+      rating = null
+      totalOrders = 0
+      isUnrated = true
+    } else {
+      // Create more realistic rating distribution for rated customers
+      const rand = Math.random()
+      if (rand < 0.05)
+        rating = Math.random() * 1 // 0-1 stars (5%)
+      else if (rand < 0.15)
+        rating = 1 + Math.random() * 1 // 1-2 stars (10%)
+      else if (rand < 0.35)
+        rating = 2 + Math.random() * 1 // 2-3 stars (20%)
+      else if (rand < 0.65)
+        rating = 3 + Math.random() * 1 // 3-4 stars (30%)
+      else rating = 4 + Math.random() * 1 // 4-5 stars (35%)
+
+      rating = +rating.toFixed(1)
+      totalOrders = Math.floor(Math.random() * 50) + 1
+    }
 
     customers.push({
       id: `customer${i + 1}`,
       name: `${firstName} ${lastName}`,
       email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}@example.com`,
-      rating: +rating.toFixed(2),
-      totalOrders: Math.floor(Math.random() * 50) + 1,
+      rating,
+      totalOrders,
+      isUnrated,
       joinDate: new Date(2020 + Math.random() * 4, Math.floor(Math.random() * 12), Math.floor(Math.random() * 28)),
     })
   }
 
-  return customers.sort((a, b) => b.rating - a.rating)
+  return customers.sort((a, b) => {
+    if (a.isUnrated && !b.isUnrated) return -1
+    if (!a.isUnrated && b.isUnrated) return 1
+    if (a.isUnrated && b.isUnrated) return 0
+    return (b.rating || 0) - (a.rating || 0)
+  })
 }
 
 const generateProducts = () => {
@@ -158,7 +182,7 @@ const generateProducts = () => {
       { name: "Designer Leather Jacket", image: "leather-jacket" },
       { name: "Silk Evening Dress", image: "evening-dress" },
       { name: "Cashmere Sweater", image: "cashmere-sweater" },
-      { name: "Amazon Jeans", image: "Amazon-jeans" },
+      { name: "Premium Jeans", image: "premium-jeans" },
       { name: "Luxury Watch", image: "luxury-watch" },
       { name: "Designer Handbag", image: "designer-handbag" },
       { name: "Silk Scarf", image: "silk-scarf" },
@@ -248,7 +272,14 @@ export default function CustomerShopping() {
 
   useEffect(() => {
     if (selectedCustomer) {
-      const eligible = products.filter((p) => selectedCustomer.rating >= p.minRating)
+      let eligible
+      if (selectedCustomer.isUnrated) {
+        // Unrated customers can see all products
+        eligible = products
+      } else {
+        // Rated customers see products based on their rating
+        eligible = products.filter((p) => selectedCustomer.rating >= p.minRating)
+      }
       setAvailableProducts(eligible)
     }
   }, [selectedCustomer, products])
@@ -281,7 +312,7 @@ export default function CustomerShopping() {
           <p className="text-gray-600">Browse products and see your eligibility based on your rating</p>
         </div>
 
-        <Card>
+        <Card className="bg-white">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
@@ -304,7 +335,11 @@ export default function CustomerShopping() {
                   <SelectItem key={customer.id} value={customer.id}>
                     <div className="flex items-center gap-2">
                       <span>{customer.name}</span>
-                      <Badge className={getRatingBadgeColor(customer.rating)}>{customer.rating} ⭐</Badge>
+                      {customer.isUnrated ? (
+                        <Badge className="bg-gray-100 text-gray-800">New Customer</Badge>
+                      ) : (
+                        <Badge className={getRatingBadgeColor(customer.rating)}>{customer.rating} ⭐</Badge>
+                      )}
                     </div>
                   </SelectItem>
                 ))}
@@ -313,27 +348,37 @@ export default function CustomerShopping() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white">
           <CardHeader>
             <CardTitle>Your Profile</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-blue-50 p-6 rounded-lg text-center">
-                <div className={`text-3xl font-bold mb-2 ${getRatingColor(selectedCustomer.rating)}`}>
-                  {selectedCustomer.rating}
-                </div>
-                <div className="text-sm text-gray-600 font-medium">Your Rating</div>
-                <div className="flex justify-center mt-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`h-4 w-4 ${
-                        star <= selectedCustomer.rating ? "text-yellow-400 fill-current" : "text-gray-300"
-                      }`}
-                    />
-                  ))}
-                </div>
+                {selectedCustomer.isUnrated ? (
+                  <>
+                    <div className="text-3xl font-bold text-gray-600 mb-2">New</div>
+                    <div className="text-sm text-gray-600 font-medium">Customer Status</div>
+                    <div className="text-xs text-gray-500 mt-2">Complete purchases to earn your rating</div>
+                  </>
+                ) : (
+                  <>
+                    <div className={`text-3xl font-bold mb-2 ${getRatingColor(selectedCustomer.rating)}`}>
+                      {selectedCustomer.rating}
+                    </div>
+                    <div className="text-sm text-gray-600 font-medium">Your Rating</div>
+                    <div className="flex justify-center mt-2">
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <Star
+                          key={star}
+                          className={`h-4 w-4 ${
+                            star <= selectedCustomer.rating ? "text-yellow-400 fill-current" : "text-gray-300"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
 
               <div className="bg-green-50 p-6 rounded-lg text-center">
@@ -354,7 +399,7 @@ export default function CustomerShopping() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="bg-white">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <ShoppingCart className="h-5 w-5" />
@@ -367,10 +412,16 @@ export default function CustomerShopping() {
               <>
                 <div className="mb-6 p-4 bg-green-50 rounded-lg">
                   <div className="flex items-center gap-2 text-green-800">
-                    <Package className="h-5 w-5" />
+                    <CheckCircle className="h-5 w-5" />
                     <span className="font-semibold">{availableProducts.length} products available to you</span>
                   </div>
-                  <p className="text-sm text-green-600 mt-1">Based on your {selectedCustomer.rating}⭐ rating</p>
+                  {selectedCustomer.isUnrated ? (
+                    <p className="text-sm text-green-600 mt-1">
+                      As a new customer, you have access to all products! Start shopping to build your rating.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-green-600 mt-1">Based on your {selectedCustomer.rating}⭐ rating</p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -395,7 +446,7 @@ export default function CustomerShopping() {
                             {product.category}
                           </Badge>
                         </div>
-                        <Button className="w-full">Add to Cart</Button>
+                        <Button className="w-full bg-gray-800 hover:bg-gray-900">Add to Cart</Button>
                       </CardContent>
                     </Card>
                   ))}
